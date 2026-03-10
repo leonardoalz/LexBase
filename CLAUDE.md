@@ -23,7 +23,7 @@ There are no tests in this project.
 - `(dashboard)/` — protected area for lawyers; `layout.tsx` checks Supabase auth and fetches `escritorios` record, redirects otherwise
 - `portal/[token]/` — public client portal, no auth; fetches data via `get_portal_data(token)` Supabase RPC (`security definer`)
 - `api/` — file upload, signed download URLs, email notifications, office change requests
-
+ 
 ### Data Flow Pattern
 
 Pages in `(dashboard)/` are **Server Components** that fetch data and pass it to `*Client.tsx` Client Components. The split is:
