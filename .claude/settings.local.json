@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --no-git --import-alias \"@/*\" --no-turbopack 2)",
+      "Bash(1:*)",
+      "Bash(npm install @supabase/supabase-js @supabase/ssr resend @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-select @radix-ui/react-tabs @radix-ui/react-toast lucide-react date-fns zod react-hook-form @hookform/resolvers clsx tailwind-merge)",
+      "Bash(npm run build)",
+      "Bash(python3 -c \":*)",
+      "Bash(ls \"/c/ImigraFlow/src/app/\\(dashboard\\)/processos/\")",
+      "Bash(powershell.exe -Command \"Get-Item ''C:\\\\ImigraFlow\\\\src\\\\app\\\\\\(dashboard\\)\\\\processos\\\\ProcessosList.tsx'' | Select-Object FullName\")",
+      "Bash(claude mcp add stitch --transport http https://stitch.googleapis.com/mcp --header \"X-Goog-Api-Key: api-key\" -s user)",
+      "Bash(grep -n \"TODO\\\\|FIXME\\\\|BUG\\\\|HACK\\\\|XXX\" /c/ImigraFlow/src/**/*.tsx /c/ImigraFlow/src/**/*.ts 2>/dev/null | head -30)"
+    ]
+  }
+}
