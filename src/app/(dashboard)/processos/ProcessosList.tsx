@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Search, X, ArrowUpDown, SlidersHorizontal, ChevronDown, Plus, FolderOpen, MoreHorizontal } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { Pagination } from '@/components/ui/Pagination'
 import { formatDate, daysUntil, getUrgenciaBorda, cn } from '@/lib/utils'
+import { useSearchInput } from '@/hooks/useSearchInput'
 import { NovoProcessoModal, ProcessoCreated } from './NovoProcessoModal'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/Toast'
 
 interface ProcessoRow {
   id: string
@@ -31,6 +34,7 @@ interface Props {
 
 const ALL_STATUSES = ['ativo', 'concluido', 'arquivado'] as const
 const ALL_RESPONSAVEIS = ['escritorio', 'cliente', 'orgao_externo'] as const
+const PER_PAGE = 25
 
 function DeadlineBadge({ dias }: { dias: number }) {
   if (dias < 0) {
@@ -83,7 +87,6 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
         className="block bg-white rounded-xl border border-[#e8e8e4] hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
       >
         <div className="relative">
-          {/* Left urgency border — deadline-based, ativos only */}
           {!hideProgress && urgenciaBorda !== 'normal' && (
             <div className={cn(
               'absolute left-0 top-0 bottom-0 w-[3px]',
@@ -92,9 +95,7 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
           )}
 
           <div className="px-5 py-4 grid gap-4" style={{ gridTemplateColumns: '1fr auto' }}>
-            {/* Left column */}
             <div className="min-w-0 space-y-2">
-              {/* Badges row */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {showResponsavel && <Badge variant={p.prioridade} />}
                 {showStatus && <Badge variant={statusOverride ?? p.status} />}
@@ -105,7 +106,6 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
                 )}
               </div>
 
-              {/* Title + client */}
               <div>
                 <h3 className="font-medium text-gray-900 leading-snug truncate">{p.titulo}</h3>
                 {p.clientes?.nome && (
@@ -113,7 +113,6 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
                 )}
               </div>
 
-              {/* Progress */}
               {!hideProgress && p.etapas.length > 0 && (
                 <div className="flex items-center gap-2.5">
                   <div style={{ width: 220, flexShrink: 0 }}>
@@ -126,7 +125,6 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
               )}
             </div>
 
-            {/* Right column — deadline */}
             {!hideProgress && p.data_prazo && (
               <div className="flex flex-col items-end justify-center gap-1.5 flex-shrink-0">
                 <span className="text-sm text-gray-500">{formatDate(p.data_prazo)}</span>
@@ -137,7 +135,6 @@ function ProcessoCard({ p, showResponsavel, showStatus, statusOverride, hideProg
         </div>
       </Link>
 
-      {/* Status change button — appears on hover */}
       {onStatusChange && (
         <div className="absolute top-3 right-3 z-20">
           <button
@@ -185,10 +182,10 @@ function SectionHeader({
 }
 
 export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso, funcionarios }: Props) {
+  const { toast } = useToast()
+  const { searchOpen, search, setSearch, openSearch, closeSearch, inputRef } = useSearchInput()
   const [allProcessos, setAllProcessos] = useState<ProcessoRow[]>(processos)
   const [modalOpen, setModalOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'recente' | 'prazo'>('recente')
   const [showAtivosSection, setShowAtivosSection] = useState(true)
   const [showConcluidosSection, setShowConcluidosSection] = useState(true)
@@ -197,20 +194,22 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
   const [sortOpen, setSortOpen] = useState(false)
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set(ALL_STATUSES))
   const [filterResponsaveis, setFilterResponsaveis] = useState<Set<string>>(new Set(ALL_RESPONSAVEIS))
+  const [ativosPage, setAtivosPage] = useState(1)
 
-  const inputRef = useRef<HTMLInputElement>(null)
   const filterRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
 
-  function openSearch() {
-    setSearchOpen(true)
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
+  // Reset ativos page on search/filter change
+  useEffect(() => { setAtivosPage(1) }, [search, filterStatuses, filterResponsaveis])
 
-  function closeSearch() {
-    setSearch('')
-    setSearchOpen(false)
-  }
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false)
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
 
   function toggleStatus(s: string) {
     setFilterStatuses(prev => {
@@ -237,29 +236,17 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
     (ALL_STATUSES.length - filterStatuses.size) +
     (ALL_RESPONSAVEIS.length - filterResponsaveis.size)
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { closeSearch(); setFilterOpen(false) }
-    }
-    function onClickOutside(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false)
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onClickOutside)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onClickOutside)
-    }
-  }, [])
-
   function handleProcessoCreated(p: ProcessoCreated) {
     setAllProcessos(prev => [p, ...prev])
   }
 
   async function handleStatusChange(id: string, newStatus: ProcessoRow['status']) {
     const supabase = createClient()
-    await supabase.from('processos').update({ status: newStatus }).eq('id', id)
+    const { error } = await supabase.from('processos').update({ status: newStatus }).eq('id', id)
+    if (error) {
+      toast('Erro ao alterar estado.', 'error')
+      return
+    }
     setAllProcessos(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p))
   }
 
@@ -311,6 +298,8 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
   const ativos = sortAtivos(allProcessos.filter(p => !isConcluido(p) && !isArquivado(p) && filterRow(p)))
   const concluidos = sortRows(allProcessos.filter(p => isConcluido(p) && filterRow(p, true)))
   const arquivados = sortRows(allProcessos.filter(p => isArquivado(p) && filterRow(p, true)))
+
+  const ativosPaged = ativos.slice((ativosPage - 1) * PER_PAGE, ativosPage * PER_PAGE)
 
   return (
     <div className="space-y-6">
@@ -407,13 +396,11 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
               )}
             </button>
 
-            {/* Filter panel */}
             <div className={`absolute right-0 top-full mt-1.5 z-30 w-80 bg-white border border-[#e8e8e4] rounded-xl shadow-lg transition-all duration-200 origin-top-right ${
               filterOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
             }`}>
               <div className="p-4">
                 <div className="flex gap-5">
-                  {/* Status */}
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Status</p>
                     <div className="space-y-2">
@@ -433,10 +420,8 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
                     </div>
                   </div>
 
-                  {/* Divider */}
                   <div className="w-px bg-gray-100" />
 
-                  {/* Responsável */}
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Em posse de</p>
                     <div className="space-y-2">
@@ -516,7 +501,15 @@ export function ProcessosList({ processos, escritorioId, clientes, tiposProcesso
           />
           {showAtivosSection && (ativos.length > 0 ? (
             <div className="space-y-2">
-              {ativos.map(p => <ProcessoCard key={p.id} p={p} showResponsavel onStatusChange={handleStatusChange} />)}
+              {ativosPaged.map(p => <ProcessoCard key={p.id} p={p} showResponsavel onStatusChange={handleStatusChange} />)}
+              {ativos.length > PER_PAGE && (
+                <Pagination
+                  total={ativos.length}
+                  page={ativosPage}
+                  perPage={PER_PAGE}
+                  onPageChange={setAtivosPage}
+                />
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-[#e8e8e4] py-10 text-center">

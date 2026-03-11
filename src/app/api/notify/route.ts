@@ -5,11 +5,16 @@ import {
   sendDocumentoAprovado,
   sendDocumentoRejeitado,
   sendNovoDocumentoAdvogado,
+  sendEmailPersonalizado,
 } from '@/lib/email/templates'
 
 export async function POST(request: NextRequest) {
   try {
-    const { type, processo_id, documento_id } = await request.json()
+    const body = await request.json()
+    const { type, processo_id, documento_id, corpo } = body
+
+    if (!processo_id) return NextResponse.json({ error: 'processo_id obrigatório' }, { status: 400 })
+
     const supabase = await createServiceClient()
 
     const { data: processo } = await supabase
@@ -78,6 +83,30 @@ export async function POST(request: NextRequest) {
         })
         break
       }
+
+      case 'email_personalizado': {
+        if (!corpo) break
+        await sendEmailPersonalizado({
+          clienteNome: cliente.nome,
+          clienteEmail: cliente.email,
+          portalToken: cliente.portal_token,
+          processoTitulo: processo.titulo,
+          corpo,
+        })
+        // Log event
+        await supabase.from('eventos').insert({
+          processo_id,
+          escritorio_id: processo.escritorio_id,
+          tipo: 'email_enviado',
+          titulo: 'Email personalizado enviado ao cliente',
+          visivel_cliente: false,
+          created_by: 'advogado',
+        })
+        break
+      }
+
+      default:
+        return NextResponse.json({ error: `Tipo desconhecido: ${type}` }, { status: 400 })
     }
 
     return NextResponse.json({ ok: true })

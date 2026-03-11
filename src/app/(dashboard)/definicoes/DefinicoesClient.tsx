@@ -72,12 +72,17 @@ export function DefinicoesClient({ escritorio, email }: Props) {
 
   async function onSubmit(data: FormData) {
     setRequesting(true)
-    const campos: Record<string, string> = {}
-    if (data.nome !== escritorio.nome) campos[CAMPO_LABELS.nome] = data.nome
-    if (data.email !== escritorio.email) campos[CAMPO_LABELS.email] = data.email
-    if ((data.telefone ?? '') !== (escritorio.telefone ?? '')) campos[CAMPO_LABELS.telefone] = data.telefone ?? ''
-    if ((data.morada ?? '') !== (escritorio.morada ?? '')) campos[CAMPO_LABELS.morada] = data.morada ?? ''
-    if ((data.nif ?? '') !== (escritorio.nif ?? '')) campos[CAMPO_LABELS.nif] = data.nif ?? ''
+    const campos: Record<string, { de: string; para: string }> = {}
+    if (data.nome !== escritorio.nome)
+      campos[CAMPO_LABELS.nome] = { de: escritorio.nome, para: data.nome }
+    if (data.email !== escritorio.email)
+      campos[CAMPO_LABELS.email] = { de: escritorio.email, para: data.email }
+    if ((data.telefone ?? '') !== (escritorio.telefone ?? ''))
+      campos[CAMPO_LABELS.telefone] = { de: escritorio.telefone ?? '', para: data.telefone ?? '' }
+    if ((data.morada ?? '') !== (escritorio.morada ?? ''))
+      campos[CAMPO_LABELS.morada] = { de: escritorio.morada ?? '', para: data.morada ?? '' }
+    if ((data.nif ?? '') !== (escritorio.nif ?? ''))
+      campos[CAMPO_LABELS.nif] = { de: escritorio.nif ?? '', para: data.nif ?? '' }
 
     if (Object.keys(campos).length === 0) {
       toast('Nenhuma alteração detectada.', 'info')
@@ -85,13 +90,17 @@ export function DefinicoesClient({ escritorio, email }: Props) {
       return
     }
 
-    await fetch('/api/change-request', {
+    const res = await fetch('/api/change-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ escritorio_id: escritorio.id, escritorio_nome: escritorio.nome, campos }),
     })
 
-    toast('Pedido enviado! O administrador irá processar as alterações.')
+    if (res.ok) {
+      toast('Pedido enviado! O administrador irá processar as alterações.')
+    } else {
+      toast('Erro ao enviar pedido. Tente novamente.', 'error')
+    }
     setRequesting(false)
   }
 

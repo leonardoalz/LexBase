@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search, Plus, X, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { useSearchInput } from '@/hooks/useSearchInput'
+import { Pagination } from '@/components/ui/Pagination'
 
 interface ClienteRow {
   id: string
@@ -19,35 +21,24 @@ interface ClienteRow {
 type SortCol = 'nome' | 'email' | 'nacionalidade' | 'ativos' | 'created_at'
 type SortDir = 'asc' | 'desc'
 
+const PER_PAGE = 20
+
 export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
   const router = useRouter()
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const { searchOpen, search, setSearch, openSearch, closeSearch, inputRef } = useSearchInput()
   const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({ col: 'nome', dir: 'asc' })
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [page, setPage] = useState(1)
 
-  function openSearch() {
-    setSearchOpen(true)
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
-
-  function closeSearch() {
-    setSearch('')
-    setSearchOpen(false)
-  }
+  // Reset to page 1 on search change
+  useEffect(() => { setPage(1) }, [search])
 
   function toggleSort(col: SortCol) {
     setSort(prev => prev.col === col
       ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
       : { col, dir: 'asc' }
     )
+    setPage(1)
   }
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') closeSearch() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
 
   const filtered = search.trim() === ''
     ? clientes
@@ -71,6 +62,8 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
       default: return 0
     }
   })
+
+  const paged = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   function SortIcon({ col }: { col: SortCol }) {
     if (sort.col !== col) return <ArrowUpDown className="h-3 w-3 opacity-30" />
@@ -141,43 +134,55 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         {sorted.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
-                <Th col="nome" label="Nome" />
-                <Th col="email" label="Email" />
-                <Th col="nacionalidade" label="Nacionalidade" />
-                <Th col="ativos" label="Processos ativos" />
-                <Th col="created_at" label="Criado em" />
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((c) => {
-                const ativos = c.processos.filter(p => p.status === 'ativo').length
-                return (
-                  <tr
-                    key={c.id}
-                    onClick={() => router.push(`/clientes/${c.id}`)}
-                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="px-6 py-3 font-medium text-gray-900">{c.nome}</td>
-                    <td className="px-6 py-3 text-gray-500">{c.email}</td>
-                    <td className="px-6 py-3 text-gray-500">{c.nacionalidade ?? '—'}</td>
-                    <td className="px-6 py-3">
-                      {ativos > 0 ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {ativos} ativo{ativos !== 1 ? 's' : ''}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3 text-gray-400">{formatDate(c.created_at)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+                  <Th col="nome" label="Nome" />
+                  <Th col="email" label="Email" />
+                  <Th col="nacionalidade" label="Nacionalidade" />
+                  <Th col="ativos" label="Processos ativos" />
+                  <Th col="created_at" label="Criado em" />
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((c) => {
+                  const ativos = c.processos.filter(p => p.status === 'ativo').length
+                  return (
+                    <tr
+                      key={c.id}
+                      onClick={() => router.push(`/clientes/${c.id}`)}
+                      className="border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <td className="px-6 py-3 font-medium text-gray-900">{c.nome}</td>
+                      <td className="px-6 py-3 text-gray-500">{c.email}</td>
+                      <td className="px-6 py-3 text-gray-500">{c.nacionalidade ?? '—'}</td>
+                      <td className="px-6 py-3">
+                        {ativos > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {ativos} ativo{ativos !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-gray-400">{formatDate(c.created_at)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {sorted.length > PER_PAGE && (
+              <div className="px-6 border-t border-gray-50">
+                <Pagination
+                  total={sorted.length}
+                  page={page}
+                  perPage={PER_PAGE}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
+          </>
         ) : (
           <div className="py-12 text-center">
             <p className="text-gray-400 text-sm">

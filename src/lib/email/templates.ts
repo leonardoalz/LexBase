@@ -139,3 +139,19 @@ export async function sendAlertaPrazo({ advogadoEmail, processoTitulo, diasResta
     `),
   })
 }
+
+// 8. Email personalizado (corpo escrito pelo advogado)
+export async function sendEmailPersonalizado({ clienteNome, clienteEmail, portalToken, processoTitulo, corpo }: {
+  clienteNome: string; clienteEmail: string; portalToken: string; processoTitulo: string; corpo: string
+}) {
+  const corpoHtml = corpo.replace(/\n/g, '<br>')
+  await resend.emails.send({
+    from: FROM, to: clienteEmail,
+    subject: `Mensagem sobre o seu processo: ${processoTitulo}`,
+    html: layout(`
+      <h2 style="color:#111827;margin:0 0 8px;">Mensagem do seu escritório</h2>
+      <p style="color:#6b7280;line-height:1.6;">${corpoHtml}</p>
+      <div style="margin:24px 0;">${btn(getPortalUrl(portalToken), 'Ver portal')}</div>
+    `),
+  })
+}
