@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ImigraFlow',
+  title: 'LexBase',
   description: 'Plataforma de gestão de processos de imigração',
 }
 

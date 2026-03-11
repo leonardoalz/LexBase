@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@imigraflow.pt'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@lexbase.pt'
 
 interface CampoDiff {
   de: string
@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
       .join('')
 
     await resend.emails.send({
-      from: 'ImigraFlow <noreply@imigraflow.pt>',
+      from: 'LexBase <noreply@lexbase.pt>',
       to: ADMIN_EMAIL,
-      subject: `[ImigraFlow] Pedido de alteração — ${escritorio_nome}`,
+      subject: `[LexBase] Pedido de alteração — ${escritorio_nome}`,
       html: `
         <div style="font-family:sans-serif;max-width:580px;margin:0 auto;padding:32px 0">
           <h2 style="margin:0 0 8px;color:#111827">Pedido de alteração de dados</h2>

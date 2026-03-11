@@ -22,7 +22,7 @@ export function PortalClient({ data }: Props) {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <span className="text-sm font-semibold text-blue-600">ImigraFlow</span>
+            <span className="text-sm font-semibold text-blue-600">LexBase</span>
             <span className="text-xs text-gray-400 ml-2">Portal do Cliente</span>
           </div>
           <span className="text-sm font-medium text-gray-700">{cliente.nome}</span>

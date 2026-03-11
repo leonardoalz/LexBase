@@ -28,7 +28,7 @@ export function Sidebar({ escritorioNome }: { escritorioNome: string }) {
   return (
     <aside className="fixed left-0 top-0 h-full w-56 bg-gray-900 text-white flex flex-col z-20">
       <div className="px-4 py-5 border-b border-gray-800">
-        <h1 className="text-lg font-bold text-white">ImigraFlow</h1>
+        <h1 className="text-lg font-bold text-white">LexBase</h1>
         <p className="text-xs text-gray-400 mt-0.5 truncate">{escritorioNome}</p>
       </div>
 

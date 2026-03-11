@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 import { getPortalUrl } from '@/lib/utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = 'ImigraFlow <noreply@imigraflow.pt>'
+const FROM = 'LexBase <noreply@lexbase.pt>'
 
 function btn(url: string, label: string) {
   return `<a href="${url}" style="display:inline-block;background:#1a56db;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">${label}</a>`
@@ -13,7 +13,7 @@ function layout(content: string) {
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
 ${content}
 <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0;">
-<p style="color:#9ca3af;font-size:12px;margin:0;">ImigraFlow · Gestão de processos de imigração</p>
+<p style="color:#9ca3af;font-size:12px;margin:0;">LexBase · Gestão de processos de imigração</p>
 </div></body></html>`
 }
 
