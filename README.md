@@ -1,4 +1,4 @@
-# ImigraFlow
+# LexBase
 
 Plataforma B2B SaaS para escritórios de advocacia especializados em imigração portuguesa. Advogados gerem processos no dashboard; clientes acompanham o progresso através de um portal público sem necessidade de login.
 
